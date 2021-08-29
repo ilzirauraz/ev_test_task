@@ -6,11 +6,12 @@
 import random
 from asyncio import create_task, run, sleep
 from datetime import datetime
-from typing import Any, Dict, List
+from os import getenv
 
 import requests
 
 RPS = 300
+controller_url = f"http://{getenv('CONTROLLER_HOST', '127.0.0.1')}:9090/"
 
 
 async def make_request() -> None:
@@ -19,14 +20,14 @@ async def make_request() -> None:
         "datetime": datetime.now().strftime("%Y%m%dT%H%M%S"),
         "payload": random.randint(0, 10),
     }
-    requests.post("http://127.0.0.1:9090/", json=message)
+    requests.post(controller_url, json=message)
 
 
-async def start():
+async def start() -> None:
     """Отправляет сообщения. 1 запрос на 1 сообщение"""
     while True:
         create_task(make_request())
-        await sleep(1 / RPS)
+        await sleep(1 / int(getenv("RPS", 300)))
 
 
 run(start())

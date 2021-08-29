@@ -1,44 +1,56 @@
 version: "3.2"
+
 services:
-
- controller:
+  controller:
     build:
-        context: ./
-        dockerfile: ./docker/Dockerfile.controller
+      context: .
+      dockerfile: Dockerfile
+    command: python3 controller/run.py
+    container_name: controller
     volumes:
-        - .:/app
+      - .:/app
     ports:
-      - "9090:9090"
+      - 9090:9090
+    environment: 
+      REDIS_HOST: redis
+    
+  controller_periodic_task:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: python3 controller/periodic_task.py
+    volumes:
+      - .:/app
+    environment: 
+      REDIS_HOST: redis
+      MANIPULATOR_HOST: manipulator
 
- sensor:
+  sensor:
     build: 
-        context: ./
-        dockerfile: ./docker/Dockerfile.sensor
-
+      context: .
+      dockerfile: Dockerfile
+    command: python3 sensor/sensor.py  
     environment:
-        - RPS=300
+      RPS: 300
+      CONTROLLER_HOST: controller
     volumes:
-        - .:/app
+      - .:/app
  
- manipulator:
+  manipulator:
     build:
-        context: ./
-        dockerfile: ./docker/Dockerfile.manipulator
-    volumes:
-        - .:/app
+      context: .
+      dockerfile: Dockerfile
+    command: python3 manipulator/manipulator.py 
+    container_name: manipulator
     ports:
-      - "9099:9099"
-
- redis:
-    image: "redis:alpine"
-
-    command: redis-server
-
-    ports:
-     - "6379:6379"
-
+      - 9099:9099
     volumes:
-     - $PWD/redis-data:/var/lib/redis
+      - .:/app
 
-    environment:
-     - REDIS_REPLICATION_MODE=master
+  redis:
+    image: redis:alpine
+    ports:
+      - 6379:6379
+    volumes:
+      - ./local/redis-data:/var/lib/redis
+
